@@ -32,6 +32,7 @@ yarn-error.log*
 pnpm-debug.log*
 
 # ───── Env files (do not track local secrets) ─────
+.env
 .env*.local
 .env.*.local
 !.env.example

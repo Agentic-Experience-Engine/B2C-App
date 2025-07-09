@@ -1,0 +1,177 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+user_id              Int                 @id @default(autoincrement())
+name                 String?
+email                String              @unique
+hashed_password      String
+phone_number         String?
+date_of_birth        DateTime?
+gender               String?
+marital_status       String?
+preferred_language   String?
+location             Location            @relation(fields: [location_id], references: [location_id])
+location_id          Int
+account_created_at   DateTime?
+last_login_at        DateTime?
+loyalty_level        String?
+preferred_categories String[]
+derived_age          Int?                @ignore // Computed in raw SQL (AGE from date_of_birth)
+
+orders               Order[]
+userEvents           UserEvent[]
+searchLogs           SearchLog[]
+reviews              ProductReview[]
+deviceSessions       DeviceSession[]
+profileMetadata      UserProfileMetadata?
+}
+
+model Location {
+location_id Int     @id @default(autoincrement())
+city_name   String
+state       String?
+country     String  @default("India")
+pincode     String?
+city_tier   String  // Tier-1, Tier-2, Tier-3
+
+users       User[]
+}
+
+model Product {
+product_id           Int       @id @default(autoincrement())
+name                 String
+description          String?
+brand                String?
+category             Category  @relation("Category", fields: [category_id], references: [category_id])
+subcategory          Category  @relation("SubCategory", fields: [subcategory_id], references: [category_id])
+category_id          Int
+subcategory_id       Int
+price                Decimal
+discount_percentage  Float?
+color                String?
+size                 String?
+weight               String?
+dimensions           String?
+availability_status  String?
+inventory_count      Int
+image_urls           String[]
+average_rating       Float?
+review_count         Int?
+created_at           DateTime?
+updated_at           DateTime?
+tags                 String[]
+
+orderItems           OrderItem[]
+reviews              ProductReview[]
+userEvents           UserEvent[]
+}
+
+model Category {
+category_id        Int       @id @default(autoincrement())
+name               String
+parent_category_id Int?
+parent             Category? @relation("Parent", fields: [parent_category_id], references: [category_id])
+children           Category[]@relation("Parent")
+
+products           Product[] @relation("Category")
+subProducts        Product[] @relation("SubCategory")
+}
+
+model Order {
+order_id            Int         @id @default(autoincrement())
+user                User        @relation(fields: [user_id], references: [user_id])
+user_id             Int
+order_date          DateTime
+total_amount        Decimal
+payment_method      String
+shipping_address    String
+delivery_type       String
+delivery_status     String
+delivery_estimate   DateTime
+order_status        String
+coupon_code         String?
+loyalty_points_used Int?
+
+items               OrderItem[]
+}
+
+model OrderItem {
+order_item_id Int     @id @default(autoincrement())
+order         Order   @relation(fields: [order_id], references: [order_id])
+product       Product @relation(fields: [product_id], references: [product_id])
+order_id      Int
+product_id    Int
+quantity      Int
+price_at_time Decimal
+item_discount Float?
+gift_wrapped  Boolean?
+}
+
+model UserEvent {
+event_id        Int      @id @default(autoincrement())
+user            User     @relation(fields: [user_id], references: [user_id])
+user_id         Int
+event_type      String
+product         Product? @relation(fields: [product_id], references: [product_id])
+product_id      Int?
+page            String?
+search_query    String?
+filters_applied Json?
+timestamp       DateTime
+session_id      String
+device_type     String
+}
+
+model SearchLog {
+search_id         Int      @id @default(autoincrement())
+user              User     @relation(fields: [user_id], references: [user_id])
+user_id           Int
+query             String
+result_count      Int
+filters_used      String[]
+timestamp         DateTime
+category_context  String?
+ranking_algorithm String?
+}
+
+model ProductReview {
+review_id         Int      @id @default(autoincrement())
+user              User     @relation(fields: [user_id], references: [user_id])
+user_id           Int
+product           Product  @relation(fields: [product_id], references: [product_id])
+product_id        Int
+rating            Int
+review_text       String?
+review_date       DateTime
+verified_purchase Boolean
+}
+
+model DeviceSession {
+session_id     String   @id
+user           User     @relation(fields: [user_id], references: [user_id])
+user_id        Int
+device_type    String
+browser_agent  String
+os_info        String
+session_start  DateTime
+session_end    DateTime
+ip_address     String
+geo_location   Json     // { "lat": ..., "long": ... }
+}
+
+model UserProfileMetadata {
+user_id                 Int      @id
+user                    User     @relation(fields: [user_id], references: [user_id])
+viewed_categories       String[]
+preferred_brands        String[]
+time_spent_avg          Float
+device_preference       String
+preferred_payment_method String
+}
