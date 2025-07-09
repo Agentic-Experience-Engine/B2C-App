@@ -1,36 +1,59 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
-# dependencies
+# ───── Dependencies ─────
 /node_modules
 /.pnp
 .pnp.js
 .yarn/install-state.gz
 
-# testing
+# ───── Testing ─────
 /coverage
+/.nyc_output
+.eslintcache
 
-# next.js
+# ───── Next.js ─────
 /.next/
 /out/
 
-# production
+# ───── Build ─────
 /build
+/.turbo
+/dist
 
-# misc
+# ───── Misc ─────
 .DS_Store
 *.pem
+*.log
 
-# debug
+# ───── Debug ─────
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+pnpm-debug.log*
 
-# local env files
+# ───── Env files (do not track local secrets) ─────
 .env*.local
+.env.*.local
+!.env.example
 
-# vercel
-.vercel
+# ───── Vercel ─────
+.vercel/
 
-# typescript
+# ───── TypeScript ─────
 *.tsbuildinfo
 next-env.d.ts
+
+# ───── VSCode / Editor ─────
+.vscode/
+.history/
+
+# ───── TailwindCSS ─────
+.tailwindcss/
+
+# ───── Prettier ─────
+.prettierignore
+
+# ───── Auth.js / Database generated content (if applicable) ─────
+prisma/.env
+*.sqlite
+*.db
