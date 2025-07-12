@@ -7,171 +7,252 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User {
-user_id              Int                 @id @default(autoincrement())
-name                 String?
-email                String              @unique
-hashed_password      String
-phone_number         String?
-date_of_birth        DateTime?
-gender               String?
-marital_status       String?
-preferred_language   String?
-location             Location            @relation(fields: [location_id], references: [location_id])
-location_id          Int
-account_created_at   DateTime?
-last_login_at        DateTime?
-loyalty_level        String?
-preferred_categories String[]
-derived_age          Int?                @ignore // Computed in raw SQL (AGE from date_of_birth)
+// =========================
+// CORE DOMAIN
+// =========================
 
-orders               Order[]
-userEvents           UserEvent[]
-searchLogs           SearchLog[]
-reviews              ProductReview[]
-deviceSessions       DeviceSession[]
-profileMetadata      UserProfileMetadata?
+model User {
+  id                   Int                  @id @default(autoincrement())
+  name                 String?
+  email                String               @unique
+  hashedPassword       String
+  phoneNumber          String?
+  dateOfBirth          DateTime?
+  gender               String?
+  maritalStatus        String?
+  preferredLanguage    String?
+ // Link directly to pincode
+  location             Location             @relation(fields: [locationPincode], references: [pincode])
+  locationPincode      String
+  accountCreatedAt     DateTime?            @default(now())
+  lastLoginAt          DateTime?
+  preferenceVector     Json?                // long-term embedding
+  preferredCategories  String[]
+  orders               Order[]
+  cart                 Cart?
+  searchHistory        UserSearchHistory[]
+  viewHistory          UserViewHistory[]
+  userEvents           UserEvent[]
+  autoReorders         AutoReorderSubscription[]
 }
 
 model Location {
-location_id Int     @id @default(autoincrement())
-city_name   String
-state       String?
-country     String  @default("India")
-pincode     String?
-city_tier   String  // Tier-1, Tier-2, Tier-3
+  // Use postal code as primary key
+  pincode     String   @id    // e.g., "400001"
+  district    String   // e.g., "Mumbai"
+  city        String
+  state       String   // e.g., "Maharashtra"
+  cityTier    String   // Tier-1, Tier-2, Tier-3
 
-users       User[]
-}
-
-model Product {
-product_id           Int       @id @default(autoincrement())
-name                 String
-description          String?
-brand                String?
-category             Category  @relation("Category", fields: [category_id], references: [category_id])
-subcategory          Category  @relation("SubCategory", fields: [subcategory_id], references: [category_id])
-category_id          Int
-subcategory_id       Int
-price                Decimal
-discount_percentage  Float?
-color                String?
-size                 String?
-weight               String?
-dimensions           String?
-availability_status  String?
-inventory_count      Int
-image_urls           String[]
-average_rating       Float?
-review_count         Int?
-created_at           DateTime?
-updated_at           DateTime?
-tags                 String[]
-
-orderItems           OrderItem[]
-reviews              ProductReview[]
-userEvents           UserEvent[]
+  // Users assigned to this pincode
+  users       User[]
 }
 
 model Category {
-category_id        Int       @id @default(autoincrement())
-name               String
-parent_category_id Int?
-parent             Category? @relation("Parent", fields: [parent_category_id], references: [category_id])
-children           Category[]@relation("Parent")
+  id            Int             @id @default(autoincrement())
+  name          String
+  parent        Category?       @relation("CategoryParent", fields: [parentId], references: [id])
+  parentId      Int?
+  children      Category[]      @relation("CategoryParent")
 
-products           Product[] @relation("Category")
-subProducts        Product[] @relation("SubCategory")
+  products      Product[]       @relation("CategoryProducts")
+  subProducts   Product[]       @relation("SubcategoryProducts")
+  categoryOptions CategoryOption[]
+}
+
+// =========================
+// PRODUCT CATALOG
+// =========================
+
+model Product {
+  id             Int               @id @default(autoincrement())
+  name           String
+  description    String?
+  imageUrl       String?
+  brand          String?
+  genericKeywords String[]
+  keywords       String[]
+  averageRating  Float?
+  reviewCount    Int?
+  embedding      Json?             // vector for similarity
+  autoReorders AutoReorderSubscription[]
+
+
+  category       Category          @relation("CategoryProducts", fields: [categoryId], references: [id])
+  categoryId     Int
+  subcategory    Category          @relation("SubcategoryProducts", fields: [subcategoryId], references: [id])
+  subcategoryId  Int
+
+  properties     ProductProperty[] // dynamic EAV attributes
+  skus           SKU[]
+  listings       Listing[]
+  userEvents     UserEvent[]
+  viewHistory    UserViewHistory[]
+}
+
+model Property {
+  id                Int               @id @default(autoincrement())
+  name              String            @unique
+  productProperties ProductProperty[]
+}
+
+model ProductProperty {
+  id          Int      @id @default(autoincrement())
+  product     Product  @relation(fields: [productId], references: [id])
+  productId   Int
+  property    Property @relation(fields: [propertyId], references: [id])
+  propertyId  Int
+  value       String
+  @@unique([productId, propertyId])
+}
+
+model Option {
+  id             Int             @id @default(autoincrement())
+  name           String          @unique
+  categoryOptions CategoryOption[]
+  optionValues   OptionValue[]
+}
+
+model CategoryOption {
+  category   Category @relation(fields: [categoryId], references: [id])
+  categoryId Int
+  option     Option   @relation(fields: [optionId], references: [id])
+  optionId   Int
+  @@id([categoryId, optionId])
+}
+
+model SKU {
+  id           Int            @id @default(autoincrement())
+  skuCode      String?        @unique
+  product      Product        @relation(fields: [productId], references: [id])
+  productId    Int
+  optionValues OptionValue[]
+  listings     Listing[]
+}
+
+model OptionValue {
+  id        Int    @id @default(autoincrement())
+  option    Option @relation(fields: [optionId], references: [id])
+  optionId  Int
+  sku       SKU    @relation(fields: [skuId], references: [id])
+  skuId     Int
+  value     String
+  @@unique([optionId, skuId])
+}
+
+model Seller {
+  id        Int       @id @default(autoincrement())
+  name      String
+  listings  Listing[]
+}
+
+
+model Listing {
+id Int @id @default(autoincrement())
+seller Seller @relation(fields: [sellerId], references: [id])
+sellerId Int
+sku SKU @relation(fields: [skuId], references: [id])
+skuId Int
+product Product @relation(fields: [productId], references: [id])
+productId Int
+
+price Decimal
+stockQty Int
+createdAt DateTime @default(now())
+updatedAt DateTime @updatedAt
+
+cartItems CartItem[]
+orderItems OrderItem[]
+userEvents UserEvent[]
+
+@@unique([sellerId, skuId])
+}
+// =========================
+// CART & ORDER
+// =========================
+
+model Cart {
+  id         Int       @id @default(autoincrement())
+  user       User      @relation(fields: [userId], references: [id])
+  userId Int @unique
+  isActive   Boolean   @default(true)
+  createdAt  DateTime  @default(now())
+  items      CartItem[]
+}
+
+model CartItem {
+  id           Int     @id @default(autoincrement())
+  cart         Cart    @relation(fields: [cartId], references: [id])
+  cartId       Int
+  listing      Listing @relation(fields: [listingId], references: [id])
+  listingId    Int
+  quantity     Int
+  addedAt      DateTime @default(now())
+  correctionId Int?
+  @@index([cartId])
 }
 
 model Order {
-order_id            Int         @id @default(autoincrement())
-user                User        @relation(fields: [user_id], references: [user_id])
-user_id             Int
-order_date          DateTime
-total_amount        Decimal
-payment_method      String
-shipping_address    String
-delivery_type       String
-delivery_status     String
-delivery_estimate   DateTime
-order_status        String
-coupon_code         String?
-loyalty_points_used Int?
-
-items               OrderItem[]
+  id            Int       @id @default(autoincrement())
+  user          User      @relation(fields: [userId], references: [id])
+  userId        Int
+  placedAt      DateTime  @default(now())
+  totalAmount    Decimal
+  status        String
+  items         OrderItem[]
 }
 
 model OrderItem {
-order_item_id Int     @id @default(autoincrement())
-order         Order   @relation(fields: [order_id], references: [order_id])
-product       Product @relation(fields: [product_id], references: [product_id])
-order_id      Int
-product_id    Int
-quantity      Int
-price_at_time Decimal
-item_discount Float?
-gift_wrapped  Boolean?
+  id         Int     @id @default(autoincrement())
+  order      Order   @relation(fields: [orderId], references: [id])
+  orderId    Int
+  listing    Listing @relation(fields: [listingId], references: [id])
+  listingId  Int
+  quantity   Int
+  priceEach   Decimal
+  @@index([orderId])
+}
+
+model AutoReorderSubscription {
+  id            Int      @id @default(autoincrement())
+  user          User     @relation(fields: [userId], references: [id])
+  userId        Int
+  product       Product  @relation(fields: [productId], references: [id])
+  productId     Int
+  intervalDays  Int
+  nextOrderDate DateTime
+  active        Boolean  @default(true)
+  createdAt     DateTime @default(now())
+}
+
+model UserSearchHistory {
+  id         Int      @id @default(autoincrement())
+  user       User     @relation(fields: [userId], references: [id])
+  userId     Int
+  query      String
+  searchedAt DateTime @default(now())
+}
+
+model UserViewHistory {
+  id         Int      @id @default(autoincrement())
+  user       User     @relation(fields: [userId], references: [id])
+  userId     Int
+  product    Product  @relation(fields: [productId], references: [id])
+  productId  Int
+  viewedAt   DateTime @default(now())
 }
 
 model UserEvent {
-event_id        Int      @id @default(autoincrement())
-user            User     @relation(fields: [user_id], references: [user_id])
-user_id         Int
-event_type      String
-product         Product? @relation(fields: [product_id], references: [product_id])
-product_id      Int?
-page            String?
-search_query    String?
-filters_applied Json?
-timestamp       DateTime
-session_id      String
-device_type     String
-}
-
-model SearchLog {
-search_id         Int      @id @default(autoincrement())
-user              User     @relation(fields: [user_id], references: [user_id])
-user_id           Int
-query             String
-result_count      Int
-filters_used      String[]
-timestamp         DateTime
-category_context  String?
-ranking_algorithm String?
-}
-
-model ProductReview {
-review_id         Int      @id @default(autoincrement())
-user              User     @relation(fields: [user_id], references: [user_id])
-user_id           Int
-product           Product  @relation(fields: [product_id], references: [product_id])
-product_id        Int
-rating            Int
-review_text       String?
-review_date       DateTime
-verified_purchase Boolean
-}
-
-model DeviceSession {
-session_id     String   @id
-user           User     @relation(fields: [user_id], references: [user_id])
-user_id        Int
-device_type    String
-browser_agent  String
-os_info        String
-session_start  DateTime
-session_end    DateTime
-ip_address     String
-geo_location   Json     // { "lat": ..., "long": ... }
-}
-
-model UserProfileMetadata {
-user_id                 Int      @id
-user                    User     @relation(fields: [user_id], references: [user_id])
-viewed_categories       String[]
-preferred_brands        String[]
-time_spent_avg          Float
-device_preference       String
-preferred_payment_method String
+  id           Int      @id @default(autoincrement())
+  user         User     @relation(fields: [userId], references: [id])
+  userId       Int
+  type         String
+  listing      Listing? @relation(fields: [listingId], references: [id])
+  listingId    Int?
+  product     Product?   @relation(fields: [productId], references: [id])
+productId   Int?
+  page         String?
+  query        String?
+  filters      Json?
+  timestamp    DateTime @default(now())
 }
