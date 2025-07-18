@@ -21,12 +21,10 @@ model User {
   gender               String?
   maritalStatus        String?
   preferredLanguage    String?
- // Link directly to pincode
   location             Location             @relation(fields: [locationPincode], references: [pincode])
   locationPincode      String
   accountCreatedAt     DateTime?            @default(now())
   lastLoginAt          DateTime?
-  preferenceVector     Json?                // long-term embedding
   preferredCategories  String[]
   orders               Order[]
   cart                 Cart?
@@ -70,14 +68,10 @@ model Product {
   description    String?
   imageUrl       String?
   brand          String?
-  genericKeywords String[]
   keywords       String[]
   averageRating  Float?
   reviewCount    Int?
-  embedding      Json?             // vector for similarity
   autoReorders AutoReorderSubscription[]
-
-
   category       Category          @relation("CategoryProducts", fields: [categoryId], references: [id])
   categoryId     Int
   subcategory    Category          @relation("SubcategoryProducts", fields: [subcategoryId], references: [id])
@@ -148,24 +142,24 @@ model Seller {
 
 
 model Listing {
-id Int @id @default(autoincrement())
-seller Seller @relation(fields: [sellerId], references: [id])
-sellerId Int
-sku SKU @relation(fields: [skuId], references: [id])
-skuId Int
-product Product @relation(fields: [productId], references: [id])
-productId Int
+  id Int @id @default(autoincrement())
+  seller Seller @relation(fields: [sellerId], references: [id])
+  sellerId Int
+  sku SKU @relation(fields: [skuId], references: [id])
+  skuId Int
+  product Product @relation(fields: [productId], references: [id])
+  productId Int
 
-price Decimal
-stockQty Int
-createdAt DateTime @default(now())
-updatedAt DateTime @updatedAt
+  price Decimal
+  stockQty Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-cartItems CartItem[]
-orderItems OrderItem[]
-userEvents UserEvent[]
+  cartItems CartItem[]
+  orderItems OrderItem[]
+  userEvents UserEvent[]
 
-@@unique([sellerId, skuId])
+  @@unique([sellerId, skuId])
 }
 // =========================
 // CART & ORDER
@@ -188,7 +182,6 @@ model CartItem {
   listingId    Int
   quantity     Int
   addedAt      DateTime @default(now())
-  correctionId Int?
   @@index([cartId])
 }
 
@@ -209,7 +202,7 @@ model OrderItem {
   listing    Listing @relation(fields: [listingId], references: [id])
   listingId  Int
   quantity   Int
-  priceEach   Decimal
+  priceEach  Decimal
   @@index([orderId])
 }
 
@@ -250,8 +243,7 @@ model UserEvent {
   listing      Listing? @relation(fields: [listingId], references: [id])
   listingId    Int?
   product     Product?   @relation(fields: [productId], references: [id])
-productId   Int?
-  page         String?
+  productId   Int?
   query        String?
   filters      Json?
   timestamp    DateTime @default(now())
