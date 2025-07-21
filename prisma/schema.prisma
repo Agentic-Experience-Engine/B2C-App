@@ -15,23 +15,32 @@ model User {
   id                   Int                  @id @default(autoincrement())
   name                 String?
   email                String               @unique
-  hashedPassword       String
+  hashedPassword       String?
   phoneNumber          String?
   dateOfBirth          DateTime?
   gender               String?
   maritalStatus        String?
   preferredLanguage    String?
-  location             Location             @relation(fields: [locationPincode], references: [pincode])
-  locationPincode      String
+  location             Location?             @relation(fields: [locationPincode], references: [pincode])
+  locationPincode      String?
   accountCreatedAt     DateTime?            @default(now())
+  authentication       UserAuthentication?
   lastLoginAt          DateTime?
   preferredCategories  String[]
+  onboardingComplete   Boolean  @default(false)
   orders               Order[]
   cart                 Cart?
   searchHistory        UserSearchHistory[]
   viewHistory          UserViewHistory[]
   userEvents           UserEvent[]
   autoReorders         AutoReorderSubscription[]
+}
+
+model UserAuthentication {
+  authId String @id // This is the UUID from Supabase Auth
+  // This is the relation back to existing User table
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId Int    @unique // Links to Int-based User ID
 }
 
 model Location {
