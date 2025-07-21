@@ -1,9 +1,9 @@
-import { signOut } from "@/auth";
-import { MdMenu } from "react-icons/md";
-import { getSession } from "../hooks";
+import { signOut } from '@/auth'
+import { MdMenu } from 'react-icons/md'
+import { getSession } from '../hooks'
 
 const HeaderBottom = async () => {
-  const session = await getSession();
+  const session = await getSession()
 
   return (
     <div className="bg-amazonLight text-white/80">
@@ -20,8 +20,8 @@ const HeaderBottom = async () => {
         {session && (
           <form
             action={async () => {
-              "use server";
-              await signOut();
+              'use server'
+              await signOut()
             }}
           >
             <button type="submit" className="link">
@@ -29,14 +29,9 @@ const HeaderBottom = async () => {
             </button>
           </form>
         )}
-        {!session && (
-          <p className="text-amazonYellowDark tracking-wide underline underline-offset-2 decoration-[1px]">
-            please signin to access your cart!
-          </p>
-        )}
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default HeaderBottom;
+export default HeaderBottom

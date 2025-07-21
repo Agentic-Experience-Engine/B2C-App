@@ -4,7 +4,6 @@ const SignInButton = () => {
   return (
     <Link href="/login" className="headerItem">
       <p className="text-xs">Hello, sign in</p>
-      <p className="text-white font-bold">Account & Lists</p>
     </Link>
   );
 };
