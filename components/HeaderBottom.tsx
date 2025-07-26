@@ -1,9 +1,15 @@
-import { signOut } from '@/auth'
 import { MdMenu } from 'react-icons/md'
-import { getSession } from '../hooks'
+import prisma from '../lib/prisma'
+import Link from 'next/link'
+import type { Category } from '@prisma/client'
 
 const HeaderBottom = async () => {
-  const session = await getSession()
+  let categories: Category[] = []
+  try {
+    categories = await prisma.category.findMany()
+  } catch (error) {
+    console.error('Failed to fetch categories', error)
+  }
 
   return (
     <div className="bg-amazonLight text-white/80">
@@ -12,23 +18,17 @@ const HeaderBottom = async () => {
           <MdMenu className="text-xl mr-1" />
           All
         </p>
-        <p className="link">Today&apos;s Deals</p>
-        <p className="link">Customer Service</p>
-        <p className="link hidden lg:inline-flex">Registry</p>
-        <p className="link hidden lg:inline-flex">Gift Cards</p>
-        <p className="link hidden lg:inline-flex">Sell</p>
-        {session && (
-          <form
-            action={async () => {
-              'use server'
-              await signOut()
+        {categories.map((category) => (
+          <Link
+            key={category.id}
+            href={{
+              pathname: '/',
+              query: { category: category.id },
             }}
           >
-            <button type="submit" className="link">
-              Log out
-            </button>
-          </form>
-        )}
+            <p className="link">{category.name}</p>
+          </Link>
+        ))}
       </div>
     </div>
   )
