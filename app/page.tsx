@@ -1,22 +1,16 @@
-import CarouselBanner from "@/components/CarouselBanner";
-import ProductsList from "@/components/ProductsList";
-import { fetchData } from "@/hooks/fetchter";
-import { Metadata } from "next";
+import ProductsList from '@/components/products/ProductsList'
 
-export const metadata: Metadata = {
-  title: "Home | Amazon Clone app",
-};
-
-export default async function Home() {
-  const endpoint = "https://dummyjson.com/products";
-  const { products } = await fetchData(endpoint);
-
-  return (
-    <main>
-      <CarouselBanner />
-      <div className="-mt-10 md:-mt-20 lg:-mt-60 flex items-center justify-center pb-10">
-        <ProductsList products={products} />
-      </div>
-    </main>
-  );
+interface HomepageProps {
+  searchParams: {
+    category?: string
+  }
 }
+
+const Homepage = async ({ searchParams }: HomepageProps) => {
+  return (
+    <main className="p-4 bg-gray-200">
+      <ProductsList categoryId={searchParams.category} />
+    </main>
+  )
+}
+export default Homepage
