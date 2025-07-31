@@ -6,7 +6,11 @@ import type { Category } from '@prisma/client'
 const HeaderBottom = async () => {
   let categories: Category[] = []
   try {
-    categories = await prisma.category.findMany()
+    categories = await prisma.category.findMany({
+      where: {
+        parentId: null,
+      },
+    })
   } catch (error) {
     console.error('Failed to fetch categories', error)
   }
