@@ -1,10 +1,10 @@
-"use client";
-import { calculateCartTotals } from "@/src/lib/utils";
-import React from "react";
-import PriceFormat from "../PriceFormat";
+'use client'
+import { calculateCartTotals } from '@/src/lib/utils'
+import React from 'react'
+import PriceFormat from '../../PriceFormat'
 
 const BillingSummary = () => {
-  const { totalAmt } = calculateCartTotals();
+  const { totalAmt } = calculateCartTotals()
 
   return (
     <>
@@ -18,9 +18,7 @@ const BillingSummary = () => {
         </div>
 
         <div className="flex items-center justify-between border-t border-gray-200 pt-4">
-          <dt className="text-base font-medium text-gray-900">
-            Total Discount
-          </dt>
+          <dt className="text-base font-medium text-gray-900">Total Discount</dt>
           <dd className="text-base font-medium text-gray-500">
             <PriceFormat amount={totalAmt?.discounted} />
           </dd>
@@ -33,7 +31,7 @@ const BillingSummary = () => {
         </div>
       </dl>
     </>
-  );
-};
+  )
+}
 
-export default BillingSummary;
+export default BillingSummary

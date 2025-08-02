@@ -1,4 +1,4 @@
-import { Kafka } from 'kafkajs'
+import { Kafka, Partitioners } from 'kafkajs'
 
 const kafka = new Kafka({
   clientId: 'b2c-app-amazon-clone',
@@ -6,7 +6,9 @@ const kafka = new Kafka({
 })
 
 export const produceEvent = async (topic: string, message: object) => {
-  const producer = kafka.producer()
+  const producer = kafka.producer({
+    createPartitioner: Partitioners.DefaultPartitioner,
+  })
   try {
     await producer.connect()
     await producer.send({

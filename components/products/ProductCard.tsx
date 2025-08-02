@@ -15,7 +15,8 @@ const ProductCard = ({ listing }: ProductCardProps) => {
       {/* The Image Section */}
       <div className="w-full h-48 relative mb-4">
         {/* Use our new, interactive Client Component here */}
-        <ProductImage src={product.imageUrl} alt={product.name} />
+        {/* <ProductImage src={product.imageUrl} alt={product.name} /> */}
+        <h1>TEMP_IMG</h1>
       </div>
 
       {/* The Text Content Section (this all remains the same) */}

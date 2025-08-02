@@ -3,12 +3,12 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { SlLocationPin } from 'react-icons/sl'
 import HeaderBottom from './HeaderBottom'
-import SearchInput from './SearchInput'
-import CartButton from './CartButton'
-import FavoriteButton from './FavoriteButton'
+import SearchInput from '../SearchInput'
+import CartButton from '../CartButton'
+import FavoriteButton from '../FavoriteButton'
 import { createClient } from '@/lib/supabase/server'
-import SignInButton from './auth/SignInButton'
-import UserAccount from './auth/UserAccount'
+import SignInButton from '../auth/SignInButton'
+import UserAccount from '../auth/UserAccount'
 
 const Header = async () => {
   const supabase = createClient()
