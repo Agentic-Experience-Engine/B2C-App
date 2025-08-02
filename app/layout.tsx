@@ -1,21 +1,21 @@
-import type { Metadata } from "next";
-import { Inter } from "next/font/google";
-import "./globals.css";
-import Header from "@/components/Header";
-import Footer from "@/components/Footer";
-import { Toaster } from "react-hot-toast";
+import type { Metadata } from 'next'
+import { Inter } from 'next/font/google'
+import './globals.css'
+import Header from '@/components/header/Header'
+import Footer from '@/components/Footer'
+import { Toaster } from 'react-hot-toast'
 
-const inter = Inter({ subsets: ["latin"] });
+const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: "Amazon online shopping",
-  description: "Amazon clone for education purpose",
-};
+  title: 'Amazon online shopping',
+  description: 'B2C App for Gen AI Project',
+}
 
 export default function RootLayout({
   children,
 }: Readonly<{
-  children: React.ReactNode;
+  children: React.ReactNode
 }>) {
   return (
     <html lang="en">
@@ -27,12 +27,12 @@ export default function RootLayout({
           position="bottom-right"
           toastOptions={{
             style: {
-              background: "#000000",
-              color: "#ffffff",
+              background: '#000000',
+              color: '#ffffff',
             },
           }}
         />
       </body>
     </html>
-  );
+  )
 }

@@ -1,12 +1,17 @@
 import { MdMenu } from 'react-icons/md'
-import prisma from '../lib/prisma'
+import prisma from '../../lib/prisma'
 import Link from 'next/link'
 import type { Category } from '@prisma/client'
+import CategoryLink from './CategoryLink'
 
 const HeaderBottom = async () => {
   let categories: Category[] = []
   try {
-    categories = await prisma.category.findMany()
+    categories = await prisma.category.findMany({
+      where: {
+        parentId: null,
+      },
+    })
   } catch (error) {
     console.error('Failed to fetch categories', error)
   }
@@ -19,15 +24,7 @@ const HeaderBottom = async () => {
           All
         </p>
         {categories.map((category) => (
-          <Link
-            key={category.id}
-            href={{
-              pathname: '/',
-              query: { category: category.id },
-            }}
-          >
-            <p className="link">{category.name}</p>
-          </Link>
+          <CategoryLink key={category.id} category={category} />
         ))}
       </div>
     </div>
