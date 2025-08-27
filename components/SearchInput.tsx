@@ -1,55 +1,77 @@
-"use client";
-import React, { useEffect, useRef, useState } from "react";
-import { HiOutlineSearch } from "react-icons/hi";
-import { MdOutlineClose } from "react-icons/md";
-import { fetchData } from "@/hooks/fetchter";
-import { Product } from "@/type";
-import Link from "next/link";
-import { CiSearch } from "react-icons/ci";
+'use client'
+import React, { useEffect, useRef, useState } from 'react'
+
+import { HiOutlineSearch } from 'react-icons/hi'
+import { MdOutlineClose } from 'react-icons/md'
+import { CiSearch } from 'react-icons/ci'
+import { Product } from '@/type'
+import Link from 'next/link'
+import { IoEyeOffOutline } from 'react-icons/io5'
 
 const SearchInput = () => {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [products, setProducts] = useState([]);
-  const [isInputFocused, setIsInputFocused] = useState(false); // New state to manage input focus
-  const searchContainerRef = useRef(null); // Ref to detect clicks outside
-  useEffect(() => {
-    const getData = async () => {
-      const endpoint = "https://dummyjson.com/products";
-      try {
-        const data = await fetchData(endpoint);
-        setProducts(data?.products);
-      } catch (error) {
-        console.error("Error fetching data", error);
+  const [searchQuery, setSearchQuery] = useState('')
+  const [isInputFocused, setIsInputFocused] = useState(false) // New state to manage input focus
+  const searchContainerRef = useRef(null) // Ref to detect clicks outside
+  const [filteredProducts, setFilteredProducts] = useState<Product[]>([])
+
+  const fetchSearchResults = async (query: string) => {
+    try {
+      const response = await fetch('http://localhost:8000/api/v1/search', {
+        method: 'POST',
+        headers: {
+          'Content-type': 'application/json',
+        },
+        body: JSON.stringify({ query: query }),
+      })
+      if (!response.ok) {
+        throw new Error('Network response was not ok')
       }
-    };
-    getData();
-  }, [products]);
+      const data = await response.json()
+      setFilteredProducts(data.results || []) //ensuring we have an array even if results are null
+    } catch (error) {
+      console.error('Failed to fetch search results:', error)
+      setFilteredProducts([]) // clear results on error
+    }
+  }
 
-  const [filteredProducts, setFilteredProducts] = useState([]);
-
+  //useEffect for debouncing the search input
   useEffect(() => {
-    const filtered = products.filter((item: Product) =>
-      item?.title.toLocaleLowerCase().includes(searchQuery.toLowerCase())
-    );
-    setFilteredProducts(filtered);
-  }, [searchQuery]);
-  // Effect to detect click outside
+    //if seach query is empty, clear the results and do nothing further.
+    if (searchQuery.trim() === '') {
+      setFilteredProducts([])
+      return
+    }
+
+    //Set a timer to run the search after 300ms of inactivity
+    const timerId = setTimeout(() => {
+      fetchSearchResults(searchQuery)
+    }, 300)
+
+    // Cleanup function: this will run every time the effect is re-triggered
+    // i.e every time the user types a new character
+    // it cancels the previously scheduled API call
+    return () => {
+      clearTimeout(timerId)
+    }
+  }, [searchQuery])
+  // The dependency array ensures this effect runs when searchQuery changes.
+
+  // Effet to detect click outside the close the search results.
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
         searchContainerRef.current &&
-        // @ts-ignore
+        //@ts-ignore
         !searchContainerRef.current.contains(event.target)
       ) {
-        setIsInputFocused(false); // Hide the list if clicking outside
+        setIsInputFocused(false)
       }
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
+    }
+    document.addEventListener('mousedown', handleClickOutside)
     return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, []);
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [])
 
   return (
     <div
@@ -62,30 +84,30 @@ const SearchInput = () => {
         onChange={(e) => setSearchQuery(e.target.value)}
         value={searchQuery}
         placeholder="Search amazon"
-        onFocus={() => setIsInputFocused(true)} // Set focus state
+        onFocus={() => setIsInputFocused(true)}
       />
       {searchQuery && (
         <MdOutlineClose
-          onClick={() => setSearchQuery("")}
+          onClick={() => setSearchQuery('')}
           className="text-xl text-amazonLight hover:text-red-600 absolute right-14 duration-200 cursor-pointer"
         />
       )}
       <span className="w-12 h-full bg-amazonOrange hover:bg-amazonOrangeDark duration-200 cursor-pointer text-black text-2xl flex items-center justify-center absolute right-0 rounded-tr-md rounded-br-md">
         <HiOutlineSearch />
       </span>
-      {/*  ============= Searchfield start here ========== */}
+      {/* Search results dropdown */}
       {isInputFocused && searchQuery && (
         <div className="absolute left-0 top-12 w-full mx-auto h-auto max-h-96 bg-white rounded-md overflow-y-scroll cursor-pointer text-black">
-          {filteredProducts?.length > 0 ? (
+          {filteredProducts.length > 0 ? (
             <div className="flex flex-col">
-              {filteredProducts?.map((item: Product) => (
+              {filteredProducts.map((item: Product) => (
                 <Link
                   key={item?.id}
-                  href={{
-                    pathname: `/product/${item?.id}`,
-                    query: { id: item?.id },
+                  href={`/product/${item?.id}`}
+                  onClick={() => {
+                    setIsInputFocused(false)
+                    setSearchQuery(item.title) // Optional: fill input with selection
                   }}
-                  onClick={() => setSearchQuery("")}
                   className="flex items-center gap-x-2 text-base font-medium hover:bg-lightText/30 px-3 py-1.5"
                 >
                   <CiSearch className="text-lg" /> {item?.title}
@@ -95,90 +117,16 @@ const SearchInput = () => {
           ) : (
             <div className="py-10 px-5">
               <p className="text-base">
-                Nothing matched with{" "}
-                <span className="font-semibold underline underline-offset-2 decoration-[1px]">
-                  {searchQuery}
-                </span>{" "}
-                please try again.
+                Searching for results for{' '}
+                <span className="font-semibold underline underline-offset-2 decoration-[1px]">{searchQuery}</span>
+                ...
               </p>
             </div>
           )}
         </div>
       )}
-      {/* {searchQuery && (
-  <div className="absolute left-0 top-12 w-full mx-auto h-auto max-h-96 bg-gray-200 rounded-lg overflow-y-scroll cursor-pointer text-black">
-    {filteredProducts.length > 0 ? (
-      <>
-        {searchQuery &&
-          filteredProducts.map((item: StoreProduct) => (
-            <Link
-              href={{
-                pathname: `/${item._id}`,
-                query: {
-                  _id: item._id,
-                  title: item.title,
-                  brand: item.brand,
-                  category: item.category,
-                  description: item.description,
-                  image: item.image,
-                  isNew: item.isNew,
-                  oldPrice: item.oldPrice,
-                  price: item.price,
-                },
-              }}
-              onClick={() => setSearchQuery("")}
-              key={item._id}
-              className="w-full border-b-[1px] border-b-gray-400 flex items-center gap-4"
-            >
-              <div>
-                <img
-                  className="w-24"
-                  src={item.image}
-                  alt="productImage"
-                />
-              </div>
-              <div>
-                <p className="text-xs -mb-1">
-                  {item.brand}_{item.category}
-                </p>
-                <p className="text-lg font-medium">{item.title}</p>
-                <p className="text-xs">
-                  {item.description.substring(0, 100)}
-                </p>
-                <p className="text-sm flex items-center gap-1">
-                  price:{" "}
-                  <span className="font-semibold">
-                    <FormattedPrice amount={item.price} />
-                  </span>
-                  <span className="text-gray-600 line-through">
-                    <FormattedPrice amount={item.oldPrice} />
-                  </span>
-                </p>
-              </div>
-              <div className="flex-1 text-right px-4">
-                <p className="text-base font-semibold animate-bounce text-amazonBlue">
-                  Save{" "}
-                  <FormattedPrice
-                    amount={item.oldPrice - item.price}
-                  />
-                </p>
-              </div>
-            </Link>
-          ))}
-      </>
-    ) : (
-      <div className="py-10 bg-gray-50 flex items-center justify-center">
-        <p className="text-xl font-semibold animate-bounce">
-          Nothing is matches with your search keywords. Please try
-          again
-        </p>
-      </div>
-    )}
-  </div>
-)} */}
-      {/*  ============= Searchfield end here ============ */}
     </div>
-  );
-};
+  )
+}
 
-export default SearchInput;
+export default SearchInput

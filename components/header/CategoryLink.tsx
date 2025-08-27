@@ -1,5 +1,4 @@
 'use client'
-import { produceEvent } from '@/lib/kafka'
 import type { Category } from '@prisma/client'
 import Link from 'next/link'
 
