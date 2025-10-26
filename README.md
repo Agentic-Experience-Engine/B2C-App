@@ -1,25 +1,8 @@
 # Amazon Clone Application
 
-Amazon Clone Website using Nextjs, Tailwindcss, Authjs, Stripejs.
-
-<img width="1280" alt="amazon_clone_using_nextjs_tailwindcss_stripejs,authjs_free_source_code" src="https://github.com/user-attachments/assets/a194ca47-f1cd-4496-be03-6bc8a435d0bc">
-
-## Complete resources for this project:
-🔗 Youtube link: https://youtu.be/-B4ccv5ddr4
-
-🔗 GitHub Repository: https://github.com/noorjsdivs/amazon-clone
-
-🔗 GitHub Clone link: https://github.com/noorjsdivs/amazon-clone.git
-
-🔗 Auth.js Documentation: https://authjs.dev/
-
-🔗 Stripe.js Documentation: https://stripe.com/
-
-🔗 Live Website Demo: https://amazon2.0.reactbd.com/
-
+Amazon Clone Website
 
 ## Getting Started
-
 To begin working on this project:
 
 1. **Clone the Repository:**  
