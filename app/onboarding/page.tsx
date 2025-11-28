@@ -1,9 +1,8 @@
+// app/onboarding/page.tsx
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
-import { PrismaClient } from '@prisma/client'
+import prisma from '@/lib/prisma'
 import OnboardingForm from '@/components/auth/OnboardingForm'
-
-const prisma = new PrismaClient()
 
 export default async function OnboardingPage() {
   const supabase = createClient()
@@ -15,6 +14,7 @@ export default async function OnboardingPage() {
     redirect('/login')
   }
 
+  // authId is the PK, so findUnique({ authId }) is correct
   const authLink = await prisma.userAuthentication.findUnique({
     where: { authId: user.id },
     include: { user: true },

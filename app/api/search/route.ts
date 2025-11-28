@@ -8,6 +8,7 @@ export async function GET(req: Request) {
   if (!query) {
     return NextResponse.json({ error: 'No query received' }, { status: 400 })
   }
+
   try {
     const products = await prisma.product.findMany({
       where: {
@@ -28,6 +29,7 @@ export async function GET(req: Request) {
       },
       take: 10,
     })
+
     return NextResponse.json(products)
   } catch (error) {
     console.error('error fetching results:', error)
