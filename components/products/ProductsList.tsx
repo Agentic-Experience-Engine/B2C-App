@@ -1,8 +1,14 @@
-// import ProductCard from './ProductCard'
+// // components/products/ProductsList.tsx
 // import prisma from '@/lib/prisma'
-// import { Listing, Product, Prisma } from '@prisma/client'
+// import ProductCard from './ProductCard'
+// import { Product, Prisma } from '@prisma/client'
+// import { getCurrentAppUserId } from '@/lib/auth/getCurrentAppUserId'
 
-// export type ListingWithProduct = Listing & {
+// // Client-safe type we pass to ProductCard
+// export type ListingWithProduct = {
+//   id: number
+//   productId: number
+//   price: number // number, not Prisma.Decimal
 //   product: Product
 // }
 
@@ -13,12 +19,10 @@
 //   minPrice?: string
 // }
 
-// // TODO: change this to the real logged-in user later
-// const TEST_USER_ID = 1
-
 // const ProductsList = async ({ categoryId, searchQuery, brand, minPrice }: ProductListProps) => {
 //   const productWhereClause: Prisma.ProductWhereInput = {}
 
+//   // Text search on product name/description
 //   if (searchQuery) {
 //     productWhereClause.OR = [
 //       { name: { contains: searchQuery, mode: 'insensitive' } },
@@ -26,10 +30,12 @@
 //     ]
 //   }
 
+//   // Filter by category
 //   if (categoryId) {
 //     productWhereClause.categoryId = parseInt(categoryId, 10)
 //   }
 
+//   // Filter by brand
 //   if (brand) {
 //     productWhereClause.brand = brand
 //   }
@@ -38,45 +44,48 @@
 //     product: productWhereClause,
 //   }
 
+//   // Filter by minimum price on the listing
 //   if (minPrice) {
 //     listingWhereClause.price = {
 //       gte: parseFloat(minPrice),
 //     }
 //   }
 
-//   // 🔹 Build filters JSON for logging
+//   // Build filters JSON for logging
 //   const filters: Record<string, any> = {}
 //   if (brand) filters.brand = brand
 //   if (minPrice) filters.minPrice = parseFloat(minPrice)
 //   if (categoryId) filters.categoryId = parseInt(categoryId, 10)
 
-//   // 🔹 Log user event (best-effort, won't break page if it fails)
+//   // ---- Log a "search" UserEvent (server-side) ------------------------
 //   try {
-//     if (searchQuery || Object.keys(filters).length > 0) {
+//     const appUserId = await getCurrentAppUserId()
+
+//     if (appUserId && (searchQuery || Object.keys(filters).length > 0)) {
 //       await prisma.userEvent.create({
 //         data: {
-//           userId: TEST_USER_ID, // make sure this user exists in your User table
+//           userId: appUserId,
 //           type: 'search',
 //           query: searchQuery || null,
 //           filters: Object.keys(filters).length > 0 ? filters : undefined,
-//           // listingId, productId are null for search events
 //         },
 //       })
+
 //       console.log('Logged UserEvent for search:', {
-//         userId: TEST_USER_ID,
+//         userId: appUserId,
 //         query: searchQuery,
 //         filters,
 //       })
 //     }
 //   } catch (logError) {
 //     console.error('Failed to log UserEvent search:', logError)
-//     // swallow error – we don't want logging to break the page
 //   }
 
+//   // ---- Fetch listings + products from DB -----------------------------
 //   let listings: ListingWithProduct[] = []
 
 //   try {
-//     listings = await prisma.listing.findMany({
+//     const dbListings = await prisma.listing.findMany({
 //       where: listingWhereClause,
 //       include: {
 //         product: true,
@@ -86,16 +95,32 @@
 //         createdAt: 'desc',
 //       },
 //     })
+
+//     // Convert Prisma.Decimal -> number for client safety
+//     listings = dbListings.map((l) => ({
+//       id: l.id,
+//       productId: l.productId,
+//       price: Number(l.price),
+//       product: l.product,
+//     }))
 //   } catch (error) {
-//     console.error('Internal Error', error)
+//     console.error('Internal Error fetching listings:', error)
 //   }
 
+//   // ---- Render --------------------------------------------------------
 //   return (
 //     <div className="flex-1">
 //       {listings.length > 0 ? (
 //         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
 //           {listings.map((listing) => (
-//             <ProductCard key={listing.id} listing={listing} />
+//             <ProductCard
+//               key={listing.id}
+//               listing={listing}
+//               searchQuery={searchQuery}
+//               brand={brand}
+//               minPrice={minPrice}
+//               categoryId={categoryId}
+//             />
 //           ))}
 //         </div>
 //       ) : (
@@ -109,15 +134,17 @@
 // }
 
 // export default ProductsList
-
 // components/products/ProductsList.tsx
-import ProductCard from './ProductCard'
 import prisma from '@/lib/prisma'
-import { Listing, Product, Prisma } from '@prisma/client'
+import ProductCard from './ProductCard'
+import { Prisma, Product as PrismaProduct } from '@prisma/client'
 import { getCurrentAppUserId } from '@/lib/auth/getCurrentAppUserId'
 
-export type ListingWithProduct = Listing & {
-  product: Product
+export type ListingWithProduct = {
+  id: number
+  productId: number
+  price: number
+  product: PrismaProduct
 }
 
 interface ProductListProps {
@@ -160,7 +187,6 @@ const ProductsList = async ({ categoryId, searchQuery, brand, minPrice }: Produc
   if (minPrice) filters.minPrice = parseFloat(minPrice)
   if (categoryId) filters.categoryId = parseInt(categoryId, 10)
 
-  // 👇 This will internally use your UserAuthentication.authId -> userId mapping
   try {
     const appUserId = await getCurrentAppUserId()
 
@@ -173,12 +199,6 @@ const ProductsList = async ({ categoryId, searchQuery, brand, minPrice }: Produc
           filters: Object.keys(filters).length > 0 ? filters : undefined,
         },
       })
-
-      console.log('Logged UserEvent for search:', {
-        userId: appUserId,
-        query: searchQuery,
-        filters,
-      })
     }
   } catch (logError) {
     console.error('Failed to log UserEvent search:', logError)
@@ -187,7 +207,7 @@ const ProductsList = async ({ categoryId, searchQuery, brand, minPrice }: Produc
   let listings: ListingWithProduct[] = []
 
   try {
-    listings = await prisma.listing.findMany({
+    const dbListings = await prisma.listing.findMany({
       where: listingWhereClause,
       include: {
         product: true,
@@ -197,8 +217,15 @@ const ProductsList = async ({ categoryId, searchQuery, brand, minPrice }: Produc
         createdAt: 'desc',
       },
     })
+
+    listings = dbListings.map((l) => ({
+      id: l.id,
+      productId: l.productId,
+      price: Number(l.price),
+      product: l.product,
+    }))
   } catch (error) {
-    console.error('Internal Error', error)
+    console.error('Internal Error fetching listings:', error)
   }
 
   return (
@@ -206,7 +233,14 @@ const ProductsList = async ({ categoryId, searchQuery, brand, minPrice }: Produc
       {listings.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
           {listings.map((listing) => (
-            <ProductCard key={listing.id} listing={listing} />
+            <ProductCard
+              key={listing.id}
+              listing={listing}
+              searchQuery={searchQuery}
+              brand={brand}
+              minPrice={minPrice}
+              categoryId={categoryId}
+            />
           ))}
         </div>
       ) : (
