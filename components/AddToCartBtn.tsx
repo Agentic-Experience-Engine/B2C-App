@@ -1,14 +1,14 @@
 // 'use client'
 
-// import { useState } from 'react'
-// import { Product } from '@/type'
+// import { useEffect, useState } from 'react'
+// import { Product as StoreProduct } from '@/type'
 // import { store } from '@/lib/store'
 // import { cn } from '@/lib/utils'
 // import { FaMinus, FaPlus } from 'react-icons/fa'
 // import toast from 'react-hot-toast'
 
 // interface Props {
-//   product: Product
+//   product: StoreProduct
 //   className?: string
 //   title?: string
 //   showPrice?: boolean
@@ -21,18 +21,17 @@
 
 // const AddToCartBtn = ({ product, className, listingId, searchQuery, brand, minPrice, categoryId }: Props) => {
 //   const { addToCart, cartProduct, decreaseQuantity } = store()
+//   const [existingProduct, setExistingProduct] = useState<StoreProduct | null>(null)
 
-//   // Initialize from store once, but after that we control quantity locally
-//   const initialQuantity = (() => {
-//     const inCart = cartProduct.find((item) => item?.id === product?.id)
-//     return inCart?.quantity ?? 0
-//   })()
+//   useEffect(() => {
+//     const availableItem = cartProduct.find((item) => item?.id === product?.id)
+//     setExistingProduct((availableItem as StoreProduct) || null)
+//   }, [product, cartProduct])
 
-//   const [quantity, setQuantity] = useState<number>(initialQuantity)
-
-//   const buildFilters = (qty: number) => {
+//   const buildFilters = (quantity: number) => {
 //     const filters: Record<string, any> = {
-//       quantity: qty,
+//       source: 'product_card',
+//       quantity,
 //       price: product.price,
 //       title: product.title,
 //       brand: product.brand,
@@ -44,15 +43,13 @@
 //     return filters
 //   }
 
-//   const logUserEvent = async (type: 'add_to_cart' | 'remove_from_cart', qty: number) => {
+//   const logUserEvent = async (type: 'add_to_cart' | 'remove_from_cart', quantity: number) => {
 //     try {
-//       const filters = buildFilters(qty)
+//       const filters = buildFilters(quantity)
 
 //       await fetch('/api/user-events/log', {
 //         method: 'POST',
-//         headers: {
-//           'Content-Type': 'application/json',
-//         },
+//         headers: { 'Content-Type': 'application/json' },
 //         body: JSON.stringify({
 //           type,
 //           productId: product.id,
@@ -61,54 +58,47 @@
 //           filters,
 //         }),
 //       })
-//     } catch (error) {
-//       console.error(`Failed to log ${type} event:`, error)
+//     } catch (err) {
+//       console.error(`Failed to log ${type} event:`, err)
 //     }
 //   }
 
-//   // ➕ Add handler
-//   // - Always updates store
-//   // - Only logs when going from 0 -> 1
-//   const handleAddToCart = (e?: React.MouseEvent<HTMLButtonElement>) => {
-//     e?.stopPropagation()
+//   const handleAddToCart = (e?: any) => {
+//     e?.stopPropagation?.()
+//     if (!product) return
 
-//     const prev = quantity
-//     const next = prev + 1
+//     const prevQty = existingProduct?.quantity ?? 0
 
-//     addToCart(product)
-//     setQuantity(next)
+//     addToCart(product as any)
+
+//     const newQty = prevQty + 1
+
+//     if (prevQty === 0) {
+//       void logUserEvent('add_to_cart', newQty)
+//     }
 
 //     toast.success(`${product?.title.substring(0, 12)}... added successfully!`)
-
-//     if (prev === 0) {
-//       // This is the first time it's in the cart -> one add_to_cart event
-//       logUserEvent('add_to_cart', next)
-//     }
 //   }
 
-//   // ➖ Remove handler
-//   // - Always updates store (when > 0)
-//   // - Only logs when going from 1 -> 0
-//   const handleDeleteProduct = (e: React.MouseEvent<HTMLButtonElement>) => {
-//     e.stopPropagation()
+//   const handleDeleteProduct = (e: any) => {
+//     e?.stopPropagation?.()
+//     if (!existingProduct) return
 
-//     if (quantity <= 0) return
+//     const prevQty = existingProduct.quantity ?? 1
 
-//     const prev = quantity
-//     const next = prev - 1
+//     decreaseQuantity(existingProduct.id)
 
-//     decreaseQuantity(product.id)
-//     setQuantity(next)
+//     const newQty = prevQty - 1
 
-//     if (next > 0) {
+//     if (newQty > 0) {
 //       toast.success(`${product?.title.substring(0, 10)} decreased successfully`)
-//       // No log here – still in cart, just adjusting quantity
 //     } else {
 //       toast.success(`${product?.title.substring(0, 10)} removed from cart successfully`)
-//       // Now fully removed from cart -> one remove_from_cart event
-//       logUserEvent('remove_from_cart', 0)
+//       void logUserEvent('remove_from_cart', 0)
 //     }
 //   }
+
+//   const quantity = existingProduct?.quantity ?? 0
 
 //   return (
 //     <>
@@ -144,6 +134,7 @@
 // }
 
 // export default AddToCartBtn
+
 // components/AddToCartBtn.tsx
 'use client'
 
@@ -216,7 +207,13 @@ const AddToCartBtn = ({ product, className, listingId, searchQuery, brand, minPr
 
     const prevQty = existingProduct?.quantity ?? 0
 
-    addToCart(product as any)
+    // 👉 attach listingId when storing in cart
+    const productWithListing: StoreProduct = {
+      ...product,
+      listingId: listingId ?? product.listingId,
+    }
+
+    addToCart(productWithListing as any)
 
     const newQty = prevQty + 1
 
