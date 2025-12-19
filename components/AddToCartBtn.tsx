@@ -1,3 +1,4 @@
+// // components/AddToCartBtn.tsx
 // 'use client'
 
 // import { useEffect, useState } from 'react'
@@ -69,7 +70,13 @@
 
 //     const prevQty = existingProduct?.quantity ?? 0
 
-//     addToCart(product as any)
+//     // 👉 attach listingId when storing in cart
+//     const productWithListing: StoreProduct = {
+//       ...product,
+//       listingId: listingId ?? product.listingId,
+//     }
+
+//     addToCart(productWithListing as any)
 
 //     const newQty = prevQty + 1
 
@@ -166,6 +173,7 @@ const AddToCartBtn = ({ product, className, listingId, searchQuery, brand, minPr
     setExistingProduct((availableItem as StoreProduct) || null)
   }, [product, cartProduct])
 
+  // Build filters for behavioral analytics (this is fine)
   const buildFilters = (quantity: number) => {
     const filters: Record<string, any> = {
       source: 'product_card',
@@ -201,43 +209,47 @@ const AddToCartBtn = ({ product, className, listingId, searchQuery, brand, minPr
     }
   }
 
-  const handleAddToCart = (e?: any) => {
+  // ✅ FIXED: async + listingId enforced
+  const handleAddToCart = async (e?: any) => {
     e?.stopPropagation?.()
     if (!product) return
 
     const prevQty = existingProduct?.quantity ?? 0
 
-    // 👉 attach listingId when storing in cart
+    // ALWAYS attach listingId
     const productWithListing: StoreProduct = {
       ...product,
       listingId: listingId ?? product.listingId,
     }
 
-    addToCart(productWithListing as any)
+    // Sync Zustand + DB
+    await addToCart(productWithListing)
 
     const newQty = prevQty + 1
 
+    // Log only first time added
     if (prevQty === 0) {
       void logUserEvent('add_to_cart', newQty)
     }
 
-    toast.success(`${product?.title.substring(0, 12)}... added successfully!`)
+    toast.success(`${product.title.substring(0, 12)}... added successfully!`)
   }
 
-  const handleDeleteProduct = (e: any) => {
+  // ✅ FIXED: async + remove logic matched to DB sync system
+  const handleDeleteProduct = async (e: any) => {
     e?.stopPropagation?.()
     if (!existingProduct) return
 
     const prevQty = existingProduct.quantity ?? 1
-
-    decreaseQuantity(existingProduct.id)
-
     const newQty = prevQty - 1
 
+    // Update Zustand + DB
+    await decreaseQuantity(existingProduct.id)
+
     if (newQty > 0) {
-      toast.success(`${product?.title.substring(0, 10)} decreased successfully`)
+      toast.success(`${product.title.substring(0, 10)} decreased successfully`)
     } else {
-      toast.success(`${product?.title.substring(0, 10)} removed from cart successfully`)
+      toast.success(`${product.title.substring(0, 10)} removed from cart successfully`)
       void logUserEvent('remove_from_cart', 0)
     }
   }
@@ -254,7 +266,9 @@ const AddToCartBtn = ({ product, className, listingId, searchQuery, brand, minPr
           >
             <FaMinus />
           </button>
+
           <p className="text-base font-semibold w-10 text-center">{quantity}</p>
+
           <button
             onClick={handleAddToCart}
             className="bg-[#f7f7f7] text-black p-2 border-[1px] border-gray-200 hover:border-skyText rounded-full text-sm hover:bg-white duration-200 cursor-pointer"

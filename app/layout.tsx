@@ -4,6 +4,7 @@ import './globals.css'
 import Header from '@/components/header/Header'
 import Footer from '@/components/Footer'
 import { Toaster } from 'react-hot-toast'
+import CartHydrator from '@/components/CartHydrator'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -21,6 +22,10 @@ export default function RootLayout({
     <html lang="en">
       <body className={inter.className}>
         <Header />
+
+        {/* 🔥 This makes the cart feel like Amazon: it restores from DB on login */}
+        <CartHydrator />
+
         {children}
         <Footer />
         <Toaster
