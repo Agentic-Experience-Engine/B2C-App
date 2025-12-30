@@ -42,16 +42,27 @@ export const store = create<StoreType>()(
       favoriteProduct: [],
 
       // 🔹 Load cart from DB for logged-in user (Amazon-like restore on login)
+      // hydrateCartFromDB: async () => {
+      //   try {
+      //     const res = await fetch('/api/cart/load', { cache: 'no-store' })
+      //     if (!res.ok) return
+      //     const data = await res.json()
+      //     if (Array.isArray(data.items)) {
+      //       set({ cartProduct: data.items })
+      //     }
+      //   } catch (err) {
+      //     console.error('Failed to hydrate cart from DB:', err)
+      //   }
+      // }
       hydrateCartFromDB: async () => {
-        try {
-          const res = await fetch('/api/cart/load', { cache: 'no-store' })
-          if (!res.ok) return
-          const data = await res.json()
-          if (Array.isArray(data.items)) {
-            set({ cartProduct: data.items })
-          }
-        } catch (err) {
-          console.error('Failed to hydrate cart from DB:', err)
+        const res = await fetch('/api/cart/load')
+        const data = await res.json()
+
+        if (!Array.isArray(data.items)) return
+
+        // IMPORTANT: only replace if server has items
+        if (data.items.length > 0) {
+          set({ cartProduct: data.items })
         }
       },
 

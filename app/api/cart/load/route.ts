@@ -9,10 +9,8 @@ export async function GET() {
   try {
     const userId = await getCurrentAppUserId()
     if (!userId) {
-      // not logged in → no server-side cart
-      return NextResponse.json({ items: [] })
+      return NextResponse.json({ items: [] }, { status: 200 })
     }
-
     const cart = await prisma.cart.findUnique({
       where: { userId },
       include: {
