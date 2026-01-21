@@ -7,90 +7,76 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// =========================
-// CORE DOMAIN
-// =========================
-
 model User {
-  id                   Int                  @id @default(autoincrement())
-  name                 String?
-  email                String               @unique
-  hashedPassword       String?
-  phoneNumber          String?
-  dateOfBirth          DateTime?
-  gender               String?
-  maritalStatus        String?
-  preferredLanguage    String?
-  location             Location?             @relation(fields: [locationPincode], references: [pincode])
-  locationPincode      String?
-  accountCreatedAt     DateTime?            @default(now())
-  authentication       UserAuthentication?
-  lastLoginAt          DateTime?
-  preferredCategories  String[]
-  onboardingComplete   Boolean  @default(false)
-  orders               Order[]
-  cart                 Cart?
-  searchHistory        UserSearchHistory[]
-  viewHistory          UserViewHistory[]
-  userEvents           UserEvent[]
-  autoReorders         AutoReorderSubscription[]
+  id                  Int                       @id @default(autoincrement())
+  name                String?
+  email               String                    @unique
+  phoneNumber         String?
+  dateOfBirth         DateTime?
+  gender              String?
+  maritalStatus       String?
+  preferredLanguage   String?
+  locationPincode     String?
+  accountCreatedAt    DateTime?                 @default(now())
+  lastLoginAt         DateTime?
+  preferredCategories String[]
+  hashedPassword      String?
+  onboardingComplete  Boolean                   @default(false)
+  autoReorders        AutoReorderSubscription[]
+  cart                Cart?
+  orders              Order[]
+  location            Location?                 @relation(fields: [locationPincode], references: [pincode])
+  authentication      UserAuthentication?
+  userEvents          UserEvent[]
+  searchHistory       UserSearchHistory[]
+  viewHistory         UserViewHistory[]
 }
 
 model UserAuthentication {
-  authId String @id // This is the UUID from Supabase Auth
-  // This is the relation back to existing User table
+  authId String @id
+  userId Int    @unique
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId Int    @unique // Links to Int-based User ID
 }
 
 model Location {
-  // Use postal code as primary key
-  pincode     String   @id    // e.g., "400001"
-  district    String   // e.g., "Mumbai"
-  city        String
-  state       String   // e.g., "Maharashtra"
-  cityTier    String   // Tier-1, Tier-2, Tier-3
-
-  // Users assigned to this pincode
-  users       User[]
+  pincode  String @id
+  district String
+  city     String
+  state    String
+  cityTier String
+  users    User[]
 }
 
 model Category {
-  id            Int             @id @default(autoincrement())
-  name          String
-  parent        Category?       @relation("CategoryParent", fields: [parentId], references: [id])
-  parentId      Int?
-  children      Category[]      @relation("CategoryParent")
-
-  products      Product[]       @relation("CategoryProducts")
-  subProducts   Product[]       @relation("SubcategoryProducts")
+  id              Int              @id @default(autoincrement())
+  name            String
+  parentId        Int?
+  parent          Category?        @relation("CategoryParent", fields: [parentId], references: [id])
+  children        Category[]       @relation("CategoryParent")
   categoryOptions CategoryOption[]
+  products        Product[]        @relation("CategoryProducts")
+  subProducts     Product[]        @relation("SubcategoryProducts")
 }
 
-// =========================
-// PRODUCT CATALOG
-// =========================
-
 model Product {
-  id             Int               @id @default(autoincrement())
-  name           String
-  description    String?
-  imageUrl       String?
-  brand          String?
-  keywords       String[]
-  averageRating  Float?
-  reviewCount    Int?
-  autoReorders AutoReorderSubscription[]
-  category       Category          @relation("CategoryProducts", fields: [categoryId], references: [id])
-  categoryId     Int
-  subcategory    Category          @relation("SubcategoryProducts", fields: [subcategoryId], references: [id])
-  subcategoryId  Int
-
-  properties     ProductProperty[] // dynamic EAV attributes
-  skus           SKU[]
-  listings       Listing[]
-  userEvents     UserEvent[]
-  viewHistory    UserViewHistory[]
+  id            Int                       @id @default(autoincrement())
+  name          String
+  description   String?
+  imageUrl      String?
+  brand         String?
+  keywords      String[]
+  averageRating Float?
+  reviewCount   Int?
+  categoryId    Int
+  subcategoryId Int
+  autoReorders  AutoReorderSubscription[]
+  listings      Listing[]
+  category      Category                  @relation("CategoryProducts", fields: [categoryId], references: [id])
+  subcategory   Category                  @relation("SubcategoryProducts", fields: [subcategoryId], references: [id])
+  properties    ProductProperty[]
+  skus          SKU[]
+  userEvents    UserEvent[]
+  viewHistory   UserViewHistory[]
 }
 
 model Property {
@@ -100,160 +86,159 @@ model Property {
 }
 
 model ProductProperty {
-  id          Int      @id @default(autoincrement())
-  product     Product  @relation(fields: [productId], references: [id])
-  productId   Int
-  property    Property @relation(fields: [propertyId], references: [id])
-  propertyId  Int
-  value       String
+  id         Int      @id @default(autoincrement())
+  productId  Int
+  propertyId Int
+  value      String
+  product    Product  @relation(fields: [productId], references: [id])
+  property   Property @relation(fields: [propertyId], references: [id])
+
   @@unique([productId, propertyId])
 }
 
 model Option {
-  id             Int             @id @default(autoincrement())
-  name           String          @unique
+  id              Int              @id @default(autoincrement())
+  name            String           @unique
   categoryOptions CategoryOption[]
-  optionValues   OptionValue[]
+  optionValues    OptionValue[]
 }
 
 model CategoryOption {
-  category   Category @relation(fields: [categoryId], references: [id])
   categoryId Int
-  option     Option   @relation(fields: [optionId], references: [id])
   optionId   Int
+  category   Category @relation(fields: [categoryId], references: [id])
+  option     Option   @relation(fields: [optionId], references: [id])
+
   @@id([categoryId, optionId])
 }
 
 model SKU {
-  id           Int            @id @default(autoincrement())
-  skuCode      String?        @unique
-  product      Product        @relation(fields: [productId], references: [id])
+  id           Int           @id @default(autoincrement())
+  skuCode      String?       @unique
   productId    Int
-  optionValues OptionValue[]
   listings     Listing[]
+  optionValues OptionValue[]
+  product      Product       @relation(fields: [productId], references: [id])
 }
 
 model OptionValue {
-  id        Int    @id @default(autoincrement())
-  option    Option @relation(fields: [optionId], references: [id])
-  optionId  Int
-  sku       SKU    @relation(fields: [skuId], references: [id])
-  skuId     Int
-  value     String
+  id       Int    @id @default(autoincrement())
+  optionId Int
+  skuId    Int
+  value    String
+  option   Option @relation(fields: [optionId], references: [id])
+  sku      SKU    @relation(fields: [skuId], references: [id])
+
   @@unique([optionId, skuId])
 }
 
 model Seller {
-  id        Int       @id @default(autoincrement())
-  name      String
-  listings  Listing[]
+  id       Int       @id @default(autoincrement())
+  name     String
+  listings Listing[]
 }
 
-
 model Listing {
-  id Int @id @default(autoincrement())
-  seller Seller @relation(fields: [sellerId], references: [id])
-  sellerId Int
-  sku SKU @relation(fields: [skuId], references: [id])
-  skuId Int
-  product Product @relation(fields: [productId], references: [id])
-  productId Int
-
-  price Decimal
-  stockQty Int
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  cartItems CartItem[]
+  id         Int         @id @default(autoincrement())
+  sellerId   Int
+  skuId      Int
+  productId  Int
+  price      Decimal
+  stockQty   Int
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+  cartItems  CartItem[]
+  product    Product     @relation(fields: [productId], references: [id])
+  seller     Seller      @relation(fields: [sellerId], references: [id])
+  sku        SKU         @relation(fields: [skuId], references: [id])
   orderItems OrderItem[]
   userEvents UserEvent[]
 
   @@unique([sellerId, skuId])
 }
-// =========================
-// CART & ORDER
-// =========================
 
 model Cart {
-  id         Int       @id @default(autoincrement())
-  user       User      @relation(fields: [userId], references: [id])
-  userId Int @unique
-  isActive   Boolean   @default(true)
-  createdAt  DateTime  @default(now())
-  items      CartItem[]
+  id        Int        @id @default(autoincrement())
+  userId    Int        @unique
+  isActive  Boolean    @default(true)
+  createdAt DateTime   @default(now())
+  user      User       @relation(fields: [userId], references: [id])
+  items     CartItem[]
 }
 
 model CartItem {
-  id           Int     @id @default(autoincrement())
-  cart         Cart    @relation(fields: [cartId], references: [id])
-  cartId       Int
-  listing      Listing @relation(fields: [listingId], references: [id])
-  listingId    Int
-  quantity     Int
-  addedAt      DateTime @default(now())
+  id        Int      @id @default(autoincrement())
+  cartId    Int
+  listingId Int
+  quantity  Int
+  addedAt   DateTime @default(now())
+  cart      Cart     @relation(fields: [cartId], references: [id])
+  listing   Listing  @relation(fields: [listingId], references: [id])
+
   @@index([cartId])
 }
 
 model Order {
-  id            Int       @id @default(autoincrement())
-  user          User      @relation(fields: [userId], references: [id])
-  userId        Int
-  placedAt      DateTime  @default(now())
-  totalAmount    Decimal
-  status        String
-  items         OrderItem[]
+  id          Int         @id @default(autoincrement())
+  userId      Int
+  placedAt    DateTime    @default(now())
+  totalAmount Decimal
+  status      String
+  user        User        @relation(fields: [userId], references: [id])
+  items       OrderItem[]
 }
 
 model OrderItem {
-  id         Int     @id @default(autoincrement())
-  order      Order   @relation(fields: [orderId], references: [id])
-  orderId    Int
-  listing    Listing @relation(fields: [listingId], references: [id])
-  listingId  Int
-  quantity   Int
-  priceEach  Decimal
+  id        Int     @id @default(autoincrement())
+  orderId   Int
+  listingId Int
+  quantity  Int
+  priceEach Decimal
+  listing   Listing @relation(fields: [listingId], references: [id])
+  order     Order   @relation(fields: [orderId], references: [id])
+
   @@index([orderId])
 }
 
 model AutoReorderSubscription {
   id            Int      @id @default(autoincrement())
-  user          User     @relation(fields: [userId], references: [id])
   userId        Int
-  product       Product  @relation(fields: [productId], references: [id])
   productId     Int
   intervalDays  Int
   nextOrderDate DateTime
   active        Boolean  @default(true)
   createdAt     DateTime @default(now())
+  product       Product  @relation(fields: [productId], references: [id])
+  user          User     @relation(fields: [userId], references: [id])
 }
 
 model UserSearchHistory {
   id         Int      @id @default(autoincrement())
-  user       User     @relation(fields: [userId], references: [id])
   userId     Int
   query      String
   searchedAt DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id])
 }
 
 model UserViewHistory {
-  id         Int      @id @default(autoincrement())
-  user       User     @relation(fields: [userId], references: [id])
-  userId     Int
-  product    Product  @relation(fields: [productId], references: [id])
-  productId  Int
-  viewedAt   DateTime @default(now())
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  productId Int
+  viewedAt  DateTime @default(now())
+  product   Product  @relation(fields: [productId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
 }
 
 model UserEvent {
-  id           Int      @id @default(autoincrement())
-  user         User     @relation(fields: [userId], references: [id])
-  userId       Int
-  type         String
-  listing      Listing? @relation(fields: [listingId], references: [id])
-  listingId    Int?
-  product     Product?   @relation(fields: [productId], references: [id])
-  productId   Int?
-  query        String?
-  filters      Json?
-  timestamp    DateTime @default(now())
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  type      String
+  listingId Int?
+  productId Int?
+  query     String?
+  filters   Json?
+  timestamp DateTime @default(now())
+  listing   Listing? @relation(fields: [listingId], references: [id])
+  product   Product? @relation(fields: [productId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
 }

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 
 export default function SignOutButton() {
   const router = useRouter()
+
   const handleSignOut = async () => {
     const supabase = createClient()
     await supabase.auth.signOut()

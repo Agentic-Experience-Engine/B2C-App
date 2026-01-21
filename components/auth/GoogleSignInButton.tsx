@@ -1,6 +1,5 @@
 'use client'
 
-import { Button } from '@/components/ui/button'
 import { createClient } from '@/lib/supabase/client'
 import { FaGoogle } from 'react-icons/fa'
 
@@ -10,13 +9,19 @@ export default function GoogleSignInButton() {
     await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        // After Google sign-in, the callback will fire, and then we want the user
-        // to land on the onboarding page to complete their profile.
         redirectTo: `${location.origin}/auth/callback?next=/onboarding`,
       },
     })
   }
-  // ... rest of the component
 
-  return <Button onClick={handleSignIn}>Sign In with Google</Button>
+  return (
+    <button
+      type="button"
+      onClick={handleSignIn}
+      className="flex w-full items-center justify-center gap-2 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50"
+    >
+      <FaGoogle className="text-base" />
+      Continue with Google
+    </button>
+  )
 }

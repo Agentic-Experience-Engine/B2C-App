@@ -1,23 +1,13 @@
-import { auth } from "@/auth";
-import CartProducts from "@/src/components/cart/CartProducts";
-import Container from "@/src/components/Container";
-import { getSession } from "@/src/hooks";
-import { Metadata } from "next";
-import { redirect } from "next/navigation";
+// app/cart/page.tsx
+import CartPageClient from '@/components/cart/CartPageClient'
 
-export const metadata: Metadata = {
-  title: "Cart | Amazon online shopping",
-};
-
-const CartPage = async () => {
-  const session = await auth();
-
-  if (!session) {
-    redirect("/");
-  }
-  const { user } = session;
-
-  return <Container>{session && <CartProducts user={user} />}</Container>;
-};
-
-export default CartPage;
+export default function CartPage() {
+  return (
+    <main className="min-h-screen bg-gray-100 p-4">
+      <div className="max-w-5xl mx-auto bg-white rounded-lg shadow-md p-6">
+        <h1 className="text-2xl font-semibold mb-4">Shopping Cart</h1>
+        <CartPageClient />
+      </div>
+    </main>
+  )
+}
