@@ -5,20 +5,25 @@ import { createClient } from '@/lib/supabase/server'
 /**
  * Returns the internal User.id for the currently authenticated Supabase user,
  * or null if not logged in OR if we cannot safely reach the database.
+ *
+ * Use auth.getSession() (SSR-safe) instead of auth.getUser(),
+ * which can throw AuthSessionMissingError in server contexts.
  */
 export async function getCurrentAppUserId(): Promise<number | null> {
   try {
     const supabase = createClient()
+
     const {
-      data: { user },
+      data: { session },
       error,
-    } = await supabase.auth.getUser()
+    } = await supabase.auth.getSession()
 
     if (error) {
-      console.error('Supabase getUser error in getCurrentAppUserId:', error)
+      console.error('Supabase getSession error in getCurrentAppUserId:', error)
       return null
     }
 
+    const user = session?.user
     if (!user) {
       return null
     }
